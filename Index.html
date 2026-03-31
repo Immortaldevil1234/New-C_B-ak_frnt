@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AkkiStudyX - Pro Learning</title>
+    
+    <!-- Tailwind CSS (CDN for development/quick hosting) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM (CDNs) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (To compile JSX in the browser) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .custom-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .custom-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-slide-in { animation: slideInRight 0.3s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <!-- React App Container -->
+    <div id="root"></div>
+
+    <!-- React Application Logic -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ==========================================
+        // ⚙️ CONFIGURATION (Yahan Apni Details Daalein)
+        // ==========================================
+        // Jab aapka python server Heroku/Render par live ho jaye, tab yahan URL change karein.
+        const SERVER_URL = "https://aapka-python-server.herokuapp.com"; 
+        const BOT_USERNAME = "AkkiStudyX_Bot"; // Apne Telegram Bot ka Username
+
+        // --- Custom SVG Icons for CDN compatibility ---
+        const Icon = ({ name, className = "", size = 24, fill = "none" }) => {
+            const icons = {
+                menu: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>`,
+                search: `<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.3-4.3"/>`,
+                arrowLeft: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m12 19-7-7 7-7M19 12H5"/>`,
+                home: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/>`,
+                book: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>`,
+                user: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>`,
+                heart: `<path fill="${fill}" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>`,
+                share: `<circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="2"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49" stroke="currentColor" stroke-width="2"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" stroke="currentColor" stroke-width="2"/>`,
+                folder: `<path fill="${fill}" stroke="currentColor" stroke-linejoin="round" stroke-width="2" d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>`,
+                chevronRight: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6"/>`,
+                video: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>`,
+                fileText: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/><line x1="16" x2="8" y1="13" y2="13" stroke="currentColor" stroke-width="2"/><line x1="16" x2="8" y1="17" y2="17" stroke="currentColor" stroke-width="2"/><line x1="10" x2="8" y1="9" y2="9" stroke="currentColor" stroke-width="2"/>`,
+                play: `<polygon fill="${fill}" stroke="currentColor" stroke-linejoin="round" stroke-width="2" points="5 3 19 12 5 21 5 3"/>`,
+                alert: `<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><line x1="12" x2="12" y1="8" y2="12" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><line x1="12" x2="12.01" y1="16" y2="16" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>`,
+                loader: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 1 1-6.219-8.56"/>`
+            };
+            return (
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width={size} height={size} 
+                    viewBox="0 0 24 24" 
+                    className={className}
+                    dangerouslySetInnerHTML={{ __html: icons[name] || '' }} 
+                />
+            );
+        };
+
+        // --- Main App Component ---
+        function App() {
+            const [currentScreen, setCurrentScreen] = useState('home');
+            const [history, setHistory] = useState(['home']);
+            const [selectedBatch, setSelectedBatch] = useState("Sarthak Batch");
+            const [selectedSubject, setSelectedSubject] = useState(null);
+            
+            const [activeTab, setActiveTab] = useState('home');
+
+            const navigateTo = (screen, data = {}) => {
+                if (data.batch) setSelectedBatch(data.batch);
+                if (data.subject) setSelectedSubject(data.subject);
+                
+                setCurrentScreen(screen);
+                setHistory([...history, screen]);
+                
+                if(screen === 'home' || screen === 'profile') setActiveTab(screen);
+                else setActiveTab('batches');
+            };
+
+            const goBack = () => {
+                if (history.length > 1) {
+                    const newHistory = [...history];
+                    newHistory.pop();
+                    const prevScreen = newHistory[newHistory.length - 1];
+                    setCurrentScreen(prevScreen);
+                    setHistory(newHistory);
+                    
+                    if(prevScreen === 'home' || prevScreen === 'profile') setActiveTab(prevScreen);
+                    else setActiveTab('batches');
+                }
+            };
+
+            return (
+                <div className="max-w-md mx-auto h-screen bg-gradient-to-b from-[#fad0c4] to-[#ffd1ff] relative overflow-hidden flex flex-col shadow-2xl">
+                    
+                    {/* Header */}
+                    <div className="bg-white/80 backdrop-blur-xl sticky top-0 z-20 px-4 py-3 shadow-sm flex items-center justify-between border-b border-white">
+                        <div className="flex items-center gap-3">
+                            {currentScreen === 'home' ? (
+                                <button className="p-1.5 hover:bg-black/5 rounded-full transition active:scale-90">
+                                    <Icon name="menu" className="text-slate-800" />
+                                </button>
+                            ) : (
+                                <button onClick={goBack} className="p-1.5 hover:bg-black/5 rounded-full transition active:scale-90">
+                                    <Icon name="arrowLeft" className="text-slate-800" />
+                                </button>
+                            )}
+                            
+                            <h1 className="font-bold text-lg text-slate-800 truncate max-w-[220px]">
+                                {currentScreen === 'home' ? 'AkkiStudyX' : 
+                                 currentScreen === 'subjects' ? selectedBatch : 
+                                 currentScreen === 'content' ? selectedSubject : 'Profile'}
+                            </h1>
+                        </div>
+                        <button className="p-1.5 hover:bg-black/5 rounded-full transition">
+                            <Icon name="search" className="text-slate-600" size={20} />
+                        </button>
+                    </div>
+
+                    {/* Main Scrollable Area */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-white/20">
+                        {currentScreen === 'home' && <HomeScreen onNavigate={navigateTo} />}
+                        {currentScreen === 'subjects' && <SubjectsScreen onNavigate={navigateTo} />}
+                        {currentScreen === 'content' && <ContentScreen batch={selectedBatch} subject={selectedSubject} />}
+                    </div>
+
+                    {/* Bottom Nav */}
+                    <div className="bg-white/95 backdrop-blur-lg border-t border-slate-100 flex items-center justify-around pb-safe pt-2 px-2 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20">
+                        <BottomTab name="home" label="Home" isActive={activeTab === 'home'} onClick={() => navigateTo('home')} />
+                        <BottomTab name="book" label="Batches" isActive={activeTab === 'batches'} onClick={() => navigateTo('home')} />
+                        <BottomTab name="user" label="Profile" isActive={activeTab === 'profile'} onClick={() => {}} />
+                    </div>
+                </div>
+            );
+        }
+
+        function BottomTab({ name, label, isActive, onClick }) {
+            return (
+                <button onClick={onClick} className={`flex flex-col items-center gap-1 p-2 w-16 transition-all duration-200 ${isActive ? 'text-blue-600 transform -translate-y-1' : 'text-slate-400 hover:text-slate-600'}`}>
+                    <Icon name={name} size={22} fill={isActive ? "currentColor" : "none"} />
+                    <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>{label}</span>
+                    {isActive && <div className="w-1 h-1 bg-blue-600 rounded-full mt-0.5"></div>}
+                </button>
+            );
+        }
+
+        function HomeScreen({ onNavigate }) {
+            return (
+                <div className="p-4 space-y-6 pb-24 animate-fade-in">
+                    <div className="mb-2">
+                        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Swagat Hai,</h2>
+                        <h1 className="text-2xl font-black text-slate-800">Akki Student 👋</h1>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-lg text-slate-800 mb-3 flex items-center gap-2">
+                            <Icon name="book" size={20} className="text-purple-600" />
+                            Mera Batches
+                        </h3>
+                        <div className="space-y-5">
+                            <BatchCard title="Sarthak WBJEE (Bangla) 2024" badge="CRASH COURSE" dbBatchName="Sarthak Batch" onNavigate={onNavigate} />
+                            <BatchCard title="Guru Batch JEE/NEET 2024" badge="PREMIUM BATCH" dbBatchName="Guru Batch" onNavigate={onNavigate} />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function BatchCard({ title, badge, dbBatchName, onNavigate }) {
+            return (
+                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-white/50 transform transition active:scale-[0.98]">
+                    <div className="relative bg-[#0b1b3d] h-40 flex flex-col justify-center items-center overflow-hidden cursor-pointer" onClick={() => onNavigate('subjects', { batch: dbBatchName })}>
+                        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-400 to-transparent"></div>
+                        <div className="z-10 text-center mt-2">
+                            <h2 className="text-4xl font-black text-yellow-400 drop-shadow-lg tracking-wider">WBJEE</h2>
+                            <div className="bg-white/10 text-white border border-white/20 text-[9px] font-bold px-3 py-1 mt-2 inline-block rounded-full uppercase">{badge}</div>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-white">
+                        <h3 className="font-bold text-slate-800 text-[15px] leading-tight">{title}</h3>
+                        <button 
+                            onClick={() => onNavigate('subjects', { batch: dbBatchName })}
+                            className="w-full mt-4 bg-[#0b1b3d] text-white font-black py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-widest"
+                        >
+                            Explore Batch 🚀
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function SubjectsScreen({ onNavigate }) {
+            const subjects = [
+                { name: "NOTICES", dbSub: "Notices", color: "text-red-500", bg: "bg-red-100", border: "border-red-200" },
+                { name: "PHYSICS", dbSub: "Physics", color: "text-blue-500", bg: "bg-blue-100", border: "border-blue-200" },
+                { name: "CHEMISTRY", dbSub: "Chemistry", color: "text-orange-500", bg: "bg-orange-100", border: "border-orange-200" },
+                { name: "MATHS", dbSub: "Maths", color: "text-purple-500", bg: "bg-purple-100", border: "border-purple-200" }
+            ];
+
+            return (
+                <div className="p-4 space-y-4 pb-24 animate-slide-in">
+                    {subjects.map((sub, i) => (
+                        <div key={i} onClick={() => onNavigate('content', { subject: sub.dbSub })} className={`bg-white/80 backdrop-blur-md border ${sub.border} p-4 rounded-2xl flex items-center justify-between shadow-sm cursor-pointer active:scale-95`}>
+                            <div className="flex items-center gap-4">
+                                <div className={`${sub.bg} p-3 rounded-xl`}>
+                                    <Icon name="folder" size={28} className={sub.color} fill="currentColor" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-slate-800 text-lg tracking-wide">{sub.name}</h3>
+                                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Explore Content</p>
+                                </div>
+                            </div>
+                            <div className={`${sub.bg} w-8 h-8 rounded-full flex items-center justify-center`}>
+                                <Icon name="chevronRight" size={18} className={sub.color} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        function ContentScreen({ batch, subject }) {
+            const [activeTab, setActiveTab] = useState('lectures');
+            const [serverData, setServerData] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+
+            useEffect(() => {
+                const fetchContent = async () => {
+                    setIsLoading(true);
+                    try {
+                        const res = await fetch(`${SERVER_URL}/api/files?batch=${encodeURIComponent(batch)}&subject=${encodeURIComponent(subject)}`);
+                        const result = await res.json();
+                        if (result.success) setServerData(result.data);
+                    } catch (err) {
+                        console.error("API Fetch Error:", err);
+                        // Mock data for UI testing if server is down
+                        setServerData([
+                            { file_name: "1. Vectors || Introduction to Vector Quantities", file_type: "video", message_id: 101, channel_id: -100123 },
+                            { file_name: "Vectors Class Notes (PDF)", file_type: "document", message_id: 102, channel_id: -100123 },
+                            { file_name: "DPP 01 - Vectors Basics", file_type: "document", message_id: 103, channel_id: -100123 }
+                        ]);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+                fetchContent();
+            }, [batch, subject]);
+
+            const handleItemClick = (file) => {
+                const rawPayload = `single_${file.channel_id}_${file.message_id}`;
+                let encodedPayload = btoa(rawPayload).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                window.open(`https://t.me/${BOT_USERNAME}?start=${encodedPayload}`, '_blank');
+            };
+
+            const filteredData = serverData.filter(item => {
+                if (activeTab === 'lectures') return item.file_type === 'video';
+                if (activeTab === 'notes') return item.file_type === 'document' && !item.file_name.toLowerCase().includes('dpp');
+                if (activeTab === 'dpp') return item.file_type === 'document' && item.file_name.toLowerCase().includes('dpp');
+                return false;
+            });
+
+            const tabs = [
+                { id: 'lectures', label: 'Lectures', icon: 'video' },
+                { id: 'notes', label: 'Notes', icon: 'fileText' },
+                { id: 'dpp', label: 'DPP', icon: 'fileText' }
+            ];
+
+            return (
+                <div className="flex flex-col h-full animate-slide-in pb-20">
+                    <div className="flex bg-white/90 backdrop-blur-xl shadow-sm border-b border-pink-100 sticky top-0 z-10 px-1 py-1">
+                        {tabs.map(tab => (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-3 px-1 flex flex-col items-center gap-1.5 relative rounded-xl transition-all duration-300 ${activeTab === tab.id ? 'bg-blue-50/50 text-blue-600' : 'text-slate-500'}`}>
+                                <Icon name={tab.icon} size={18} />
+                                <span className={`text-[11px] ${activeTab === tab.id ? 'font-bold' : 'font-semibold'}`}>{tab.label}</span>
+                                {activeTab === tab.id && <div className="absolute bottom-0 w-1/2 h-[3px] bg-blue-600 rounded-t-full"></div>}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="p-4 flex-1">
+                        {isLoading && (
+                            <div className="flex flex-col items-center justify-center h-48 space-y-4">
+                                <div className="animate-spin text-blue-500"><Icon name="loader" size={40} /></div>
+                                <p className="text-sm font-bold text-slate-500">Loading Content...</p>
+                            </div>
+                        )}
+
+                        {!isLoading && filteredData.length > 0 && (
+                            <div className="space-y-4">
+                                {filteredData.map((file, i) => (
+                                    <div key={i} onClick={() => handleItemClick(file)} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex cursor-pointer hover:shadow-md transition-all active:scale-[0.98]">
+                                        <div className={`w-[30%] relative flex flex-col items-center justify-center overflow-hidden ${file.file_type === 'video' ? 'bg-slate-900' : 'bg-purple-100'}`}>
+                                            {file.file_type === 'video' ? (
+                                                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center z-10"><Icon name="play" size={16} className="text-white ml-1" fill="currentColor" /></div>
+                                            ) : (
+                                                <Icon name="fileText" size={32} className="text-purple-400" />
+                                            )}
+                                        </div>
+                                        <div className="p-3 w-[70%] flex flex-col justify-center">
+                                            <h4 className="font-bold text-[13px] text-slate-800 leading-snug line-clamp-2">{file.file_name}</h4>
+                                            <span className="text-[10px] text-slate-400 font-semibold bg-slate-50 px-2 py-0.5 rounded border border-slate-100 w-max mt-2">By AkkiStudyX</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {!isLoading && filteredData.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-[50vh] text-center animate-fade-in">
+                                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center border-4 border-slate-50 shadow-inner mb-4 relative">
+                                    <Icon name="folder" size={40} className="text-slate-200" fill="currentColor" />
+                                    <div className="absolute -bottom-1 -right-1 bg-red-100 text-red-500 p-1.5 rounded-full border-2 border-white"><Icon name="alert" size={16} /></div>
+                                </div>
+                                <h3 className="text-lg font-black text-slate-700">No Content Found</h3>
+                                <p className="text-xs font-semibold text-slate-400 mt-1">Server par data nahi hai</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
